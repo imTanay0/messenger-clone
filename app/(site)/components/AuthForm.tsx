@@ -4,11 +4,12 @@ import { useCallback, useState } from "react";
 import { useForm, FieldValues, SubmitHandler } from "react-hook-form";
 import { BsGithub, BsGoogle } from "react-icons/bs";
 import axios from "axios";
+import { toast } from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 import Input from "@/app/components/inputs/Input";
 import Button from "@/app/components/Button";
 import AuthSocialButton from "./AuthSocialButton";
-
 
 type Variant = "LOGIN" | "REGISTER";
 
@@ -41,11 +42,28 @@ const AuthForm = () => {
 
     if (variant === "REGISTER") {
       // Axios Register
-      axios.post('/api/register', data)
+      axios
+        .post("/api/register", data)
+        .catch(() => toast.error("Something went wrong!"))
+        .finally(() => setIsLoading(false));
     }
 
     if (variant === "LOGIN") {
       // NextAuth SignIn
+      signIn("credentials", {
+        ...data,
+        redirect: false,
+      })
+        .then((callback) => {
+          if (callback?.error) {
+            toast.error("Invalid credentials");
+          }
+
+          if (callback?.ok && !callback?.error) {
+            toast.success("Logged in!");
+          }
+        })
+        .finally(() => setIsLoading(false));
     }
   };
 
@@ -58,7 +76,6 @@ const AuthForm = () => {
   return (
     <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
       <div className="bg-white px-4 py-8 shadow sm:shadow-lg sm:px-10 rounded-md">
-        
         <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
           {variant === "REGISTER" && (
             <Input
@@ -76,7 +93,7 @@ const AuthForm = () => {
             register={register}
             errors={errors}
             disabled={isLoading}
-            />
+          />
           <Input
             id="password"
             label="Password"
@@ -84,7 +101,7 @@ const AuthForm = () => {
             register={register}
             errors={errors}
             disabled={isLoading}
-            />
+          />
           <div>
             <Button disabled={isLoading} fullWidth type="submit">
               {variant === "LOGIN" ? "Sign in" : "Register"}
@@ -118,16 +135,14 @@ const AuthForm = () => {
 
         <div className="flex gap-2 justify-center tect-sm mt-6 px-2 text-gray-500">
           <div>
-            {variant === 'LOGIN' ? 'New to Messanger?' : 'Already have an account?'}
+            {variant === "LOGIN"
+              ? "New to Messanger?"
+              : "Already have an account?"}
           </div>
-          <div
-            onClick={toggleVariant}
-            className="underline cursor-pointer"
-          >
-            {variant === 'LOGIN' ? 'Create an account' : 'Login'}
+          <div onClick={toggleVariant} className="underline cursor-pointer">
+            {variant === "LOGIN" ? "Create an account" : "Login"}
           </div>
         </div>
-
       </div>
     </div>
   );
